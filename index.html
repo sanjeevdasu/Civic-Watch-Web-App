@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Civic Watch - Civic Issues Reporting Platform</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Leaflet CSS -->
+   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+   <!-- Leaflet JS -->
+   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+   <!-- Leaflet-Geosearch -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.8.0/dist/geosearch.css" />
+<script src="https://unpkg.com/leaflet-geosearch@3.8.0/dist/geosearch.umd.js"></script>
+
+  <style>
+    body {
+      padding-top: 56px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    #map, #reportMap {
+      height: 300px;
+      width: 100%;
+      border-radius: 0.375rem;
+      margin-bottom: 10px;
+    }
+    .nav-link.active {
+      font-weight: bold;
+      color: #0d6efd !important;
+    }
+    .report-image-preview {
+      max-width: 100%;
+      max-height: 200px;
+      margin-top: 10px;
+      border-radius: 0.25rem;
+      object-fit: cover;
+    }
+    #reportMap {
+    height: 300px;
+    width: 100%;
+    border-radius: 0.375rem;
+    margin-bottom: 10px;
+    z-index: 1; /* Ensure map controls are clickable */
+}
+
+/* Leaflet popup styling */
+.leaflet-popup-content {
+    margin: 8px 12px;
+}
+
+.leaflet-popup-content-wrapper {
+    border-radius: 4px;
+}
+    .dark-mode {
+      background-color: #121212 !important;
+      color: #e0e0e0 !important;
+    }
+    .dark-mode .navbar, .dark-mode footer {
+      background-color: #1f1f1f !important;
+    }
+    .dark-mode .card {
+      background-color: #242424;
+      border-color: #333;
+    }
+    .dark-mode a {
+      color: #80cbc4;
+    }
+    .info-image {
+      border-radius: 0.5rem;
+      box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 0.15);
+      transition: transform 0.3s ease;
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      cursor: pointer;
+    }
+    .info-image:hover {
+      transform: scale(1.05);
+    }
+    .process-step {
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 0.25rem 0.5rem rgb(0 0 0 / 0.1);
+      transition: background-color 0.3s ease;
+    }
+    .process-step:hover {
+      background: #e9ecef;
+    }
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #0d6efd;
+    }
+    .stats-card {
+      transition: transform 0.3s;
+    }
+    .stats-card:hover {
+      transform: translateY(-5px);
+    }
+    .priority-high { border-left: 4px solid #dc3545; }
+    .priority-medium { border-left: 4px solid #ffc107; }
+    .priority-low { border-left: 4px solid #28a745; }
+    .status-badge {
+      font-size: 0.8em;
+      padding: 0.35em 0.65em;
+    }
+    .status-pending { background-color: #6c757d; }
+    .status-inprogress { background-color: #0dcaf0; }
+    .status-resolved { background-color: #198754; }
+    .status-rejected { background-color: #dc3545; }
+    .search-box {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .search-box i {
+      position: absolute;
+      left: 15px;
+      top: 12px;
+      color: #6c757d;
+    }
+    .search-box input {
+      padding-left: 40px;
+    }
+    .timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+    .timeline:before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #dee2e6;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 15px;
+    }
+    .timeline-item:before {
+      content: '';
+      position: absolute;
+      left: -30px;
+      top: 5px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #0d6efd;
+      border: 2px solid white;
+    }
+    .timeline-date {
+      font-size: 0.8em;
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg fixed-top navbar-dark bg-primary shadow">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-eye me-2"></i>Civic Watch
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavCivic" aria-controls="navbarNavCivic" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNavCivic">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0" id="navLinks">
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="#homeSection" data-link="homeSection">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="#reportSection" data-link="reportSection">Report Issue</a></li>
+          <li class="nav-item"><a class="nav-link" href="#viewReportsSection" data-link="viewReportsSection">My Reports</a></li>
+          <li class="nav-item"><a class="nav-link" href="#statsSection" data-link="statsSection">Statistics</a></li>
+          <li class="nav-item"><a class="nav-link" href="#adminSection" data-link="adminSection" style="display:none;">Admin Dashboard</a></li>
+        </ul>
+        <div class="d-flex align-items-center" id="authControls">
+          <button id="btnSignup" class="btn btn-outline-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#signupModal">
+            <i class="fas fa-user-plus me-1"></i>Sign Up
+          </button>
+          <button id="btnLogin" class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#loginModal">
+            <i class="fas fa-sign-in-alt me-1"></i>Login
+          </button>
+          <button id="btnLogout" class="btn btn-warning btn-sm me-2" style="display:none;">
+            <i class="fas fa-sign-out-alt me-1"></i>Logout
+          </button>
+          <button id="btnToggleDark" class="btn btn-sm me-2" title="Toggle dark mode">
+            <i class="fas fa-moon"></i>
+          </button>
+          <span id="userGreeting" class="text-white fw-bold"></span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container my-4">
+    <!-- Home Section -->
+    <section id="homeSection">
+      <div class="text-center mb-5">
+        <h1><i class="fas fa-eye me-2"></i>Welcome to Civic Watch</h1>
+        <p class="lead">Your platform for reporting and tracking civic issues in your community</p>
+        <hr />
+        <div class="d-flex justify-content-center flex-wrap gap-2">
+          <button class="btn btn-primary me-2" id="btnGoReport">
+            <i class="fas fa-plus-circle me-1"></i>Report an Issue
+          </button>
+          <button class="btn btn-secondary me-2" id="btnGoMyReports">
+            <i class="fas fa-list me-1"></i>My Reports
+          </button>
+          <button class="btn btn-info text-white me-2" id="btnGoStats">
+            <i class="fas fa-chart-bar me-1"></i>View Statistics
+          </button>
+        </div>
+      </div>
+
+      <!-- Key Features -->
+      <section class="mb-5">
+        <h2 class="text-center mb-4">Key Features</h2>
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body text-center">
+                <div class="feature-icon">
+                  <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <h4>Location Tracking</h4>
+                <p>Pinpoint exact locations of issues with our interactive map interface.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body text-center">
+                <div class="feature-icon">
+                  <i class="fas fa-bell"></i>
+                </div>
+                <h4>Real-time Updates</h4>
+                <p>Receive notifications when your reports are updated or resolved.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body text-center">
+                <div class="feature-icon">
+                  <i class="fas fa-chart-pie"></i>
+                </div>
+                <h4>Analytics Dashboard</h4>
+                <p>View statistics about reported issues in your area.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Informative Images with captions -->
+      <div class="row g-4 mb-5">
+        <div class="col-md-4">
+          <img src="https://www.broomfield.org/ImageRepository/Document?documentId=42496" alt="Pothole" class="info-image" />
+          <h5 class="mt-2 text-center">Pothole Reporting</h5>
+          <p class="text-center text-muted">Help improve road safety by reporting potholes quickly.</p>
+        </div>
+        <div class="col-md-4">
+          <img src="https://media.istockphoto.com/id/1076480852/photo/broken-street-lamp-in-city.jpg?s=612x612&w=0&k=20&c=MKylMMDuFgkXy7uUYog7oo7aQQ5ATyBqemfopYHYsKc=" alt="Street Light" class="info-image" />
+          <h5 class="mt-2 text-center">Broken Street Lights</h5>
+          <p class="text-center text-muted">Report malfunctioning street lights to keep neighborhoods secure.</p>
+        </div>
+        <div class="col-md-4">
+          <img src="https://cdndailyexcelsior.b-cdn.net/wp-content/uploads/2020/01/page13-2.jpg" alt="Garbage" class="info-image" />
+          <h5 class="mt-2 text-center">Garbage Dumps</h5>
+          <p class="text-center text-muted">Help maintain cleanliness by reporting illegal garbage dumping.</p>
+        </div>
+      </div>
+
+      <!-- Process explanation -->
+      <h2 class="mb-4 text-center">How It Works</h2>
+      <div class="row gy-4">
+        <div class="col-md-4">
+          <div class="process-step text-center">
+            <div class="feature-icon">
+              <i class="fas fa-edit"></i>
+            </div>
+            <h4>1. Report an Issue</h4>
+            <p>Sign up or log in, then submit a detailed report with images and location.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="process-step text-center">
+            <div class="feature-icon">
+              <i class="fas fa-sync-alt"></i>
+            </div>
+            <h4>2. Track & Updates</h4>
+            <p>Check your reports and receive status updates from authorities on your dashboard.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="process-step text-center">
+            <div class="feature-icon">
+              <i class="fas fa-hands-helping"></i>
+            </div>
+            <h4>3. Better Community</h4>
+            <p>Help maintain and improve your community by driving faster resolution of civic issues.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Testimonials -->
+      <section class="mt-5 pt-4">
+        <h2 class="text-center mb-4">What Our Users Say</h2>
+        <div class="row">
+          <div class="col-md-4 mb-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <blockquote class="blockquote mb-0">
+                  <p>"Civic Watch made it so easy to report a dangerous pothole in our neighborhood. It was fixed within 3 days!"</p>
+                  <footer class="blockquote-footer"> <cite>Local Resident</cite></footer>
+                </blockquote>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <blockquote class="blockquote mb-0">
+                  <p>"As a city official, this platform helps us prioritize issues based on community reports and location data."</p>
+                  <footer class="blockquote-footer"> <cite>City Maintenance</cite></footer>
+                </blockquote>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <blockquote class="blockquote mb-0">
+                  <p>"I love being able to see what issues have been reported in my area and track their resolution status."</p>
+                  <footer class="blockquote-footer"> <cite>Community Volunteer</cite></footer>
+                </blockquote>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Support & Contact -->
+      <section class="mt-5 pt-4 border-top">
+        <h3 class="text-center mb-3">Need Help or Support?</h3>
+        <div class="text-center">
+          <p>If you encounter problems or have questions, feel free to reach out to our support team.</p>
+          <div class="d-flex justify-content-center flex-wrap gap-2">
+            <a href="mailto:support@civicwatch.org" class="btn btn-outline-primary me-2">
+              <i class="fas fa-envelope me-1"></i>Email Support
+            </a>
+            <a href="tel:+1234567890" class="btn btn-outline-secondary me-2">
+              <i class="fas fa-phone me-1"></i>Call Support
+            </a>
+            <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#faqModal">
+              <i class="fas fa-question-circle me-1"></i>View FAQs
+            </button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Report Issue Section -->
+    <section id="reportSection" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-plus-circle me-2"></i>Submit a New Report</h2>
+        <button class="btn btn-sm btn-outline-secondary" id="btnShowGuidelines">
+          <i class="fas fa-info-circle me-1"></i>Reporting Guidelines
+        </button>
+      </div>
+      
+      <form id="reportForm" class="border rounded p-3 shadow-sm bg-light">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="issueType" class="form-label">Issue Type <span class="text-danger">*</span></label>
+              <select class="form-select" id="issueType" required>
+                <option value="" disabled selected>Select issue type</option>
+                <option value="Pothole">Pothole</option>
+                <option value="Broken Light">Broken Street Light</option>
+                <option value="Garbage Dump">Garbage Dump</option>
+                <option value="Water Leakage">Water Leakage</option>
+                <option value="Sewage Problem">Sewage Problem</option>
+                <option value="Road Damage">Road Damage</option>
+                <option value="Illegal Parking">Illegal Parking</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="priority" class="form-label">Priority Level</label>
+              <select class="form-select" id="priority">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+              </select>
+              <div class="form-text">Select how urgent this issue is</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+              <textarea id="description" class="form-control" rows="5" placeholder="Describe the issue in detail (location specifics, size, potential hazards, etc.)" required></textarea>
+              <div class="form-text">Be as detailed as possible to help authorities understand the issue</div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="imageUpload" class="form-label">Upload Image (optional but recommended)</label>
+              <input class="form-control" type="file" id="imageUpload" accept="image/*" capture="environment" />
+              <div class="form-text">Clear photos help verify and assess the issue</div>
+              <img id="imagePreview" class="report-image-preview d-none" alt="Image preview"/>
+            </div>
+
+            <div class="mb-3">
+              <label for="locationDescription" class="form-label">Location Description</label>
+              <input type="text" id="locationDescription" class="form-control" placeholder="E.g. Near the post office, in front of 123 Main St" />
+              <div class="form-text">Add recognizable landmarks to help locate the issue</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Mark Location on Map <span class="text-danger">*</span></label>
+              <div id="reportMap"></div>
+              <div class="form-text">Drag the marker to exact location or click on map to place it</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-paper-plane me-1"></i>Submit Report
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnCancelReport">
+            <i class="fas fa-times me-1"></i>Cancel
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- My Reports Section -->
+    <section id="viewReportsSection" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-list me-2"></i>My Reports</h2>
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchMyReports" class="form-control" placeholder="Search my reports..." />
+        </div>
+      </div>
+      
+      <div class="mb-3">
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="all">All</button>
+          <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="Pending">Pending</button>
+          <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="In Progress">In Progress</button>
+          <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="Resolved">Resolved</button>
+        </div>
+      </div>
+      
+      <div id="reportsList" class="row gy-3"></div>
+      <div id="noReportsMessage" class="text-center my-5" style="display: none;">
+        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+        <h4>No reports found</h4>
+        <p>You haven't submitted any reports yet.</p>
+        <button class="btn btn-primary" id="btnGoReportFromEmpty">
+          <i class="fas fa-plus-circle me-1"></i>Submit Your First Report
+        </button>
+      </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section id="statsSection" style="display:none;">
+      <h2 class="mb-4"><i class="fas fa-chart-bar me-2"></i>Community Statistics</h2>
+      
+      <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+          <div class="card stats-card h-100">
+            <div class="card-body text-center">
+              <h3 class="card-title" id="totalReportsStat">0</h3>
+              <p class="card-text">Total Reports</p>
+              <i class="fas fa-clipboard-list fa-2x text-primary"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <div class="card stats-card h-100">
+            <div class="card-body text-center">
+              <h3 class="card-title" id="resolvedReportsStat">0</h3>
+              <p class="card-text">Issues Resolved</p>
+              <i class="fas fa-check-circle fa-2x text-success"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <div class="card stats-card h-100">
+            <div class="card-body text-center">
+              <h3 class="card-title" id="activeReportsStat">0</h3>
+              <p class="card-text">Active Issues</p>
+              <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="card-header">
+              <h5 class="mb-0">Reports by Type</h5>
+            </div>
+            <div class="card-body">
+              <canvas id="issueTypeChart" height="300"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="card-header">
+              <h5 class="mb-0">Reports by Status</h5>
+            </div>
+            <div class="card-body">
+              <canvas id="issueStatusChart" height="300"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Recent Community Reports</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Location</th>
+                  <th>Reported</th>
+                </tr>
+              </thead>
+              <tbody id="recentReportsTable">
+                <!-- Will be populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Admin Dashboard Section -->
+    <section id="adminSection" style="display:none;">
+      <h2 class="mb-4"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h2>
+      
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>As an admin, you can update statuses, manage reports, and view detailed analytics.
+      </div>
+      
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchAdminReports" class="form-control" placeholder="Search all reports..." />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="btn-group w-100" role="group">
+            <button type="button" class="btn btn-outline-secondary admin-filter-btn" data-filter="all">All</button>
+            <button type="button" class="btn btn-outline-secondary admin-filter-btn" data-filter="Pending">Pending</button>
+            <button type="button" class="btn btn-outline-secondary admin-filter-btn" data-filter="In Progress">In Progress</button>
+            <button type="button" class="btn btn-outline-secondary admin-filter-btn" data-filter="Resolved">Resolved</button>
+          </div>
+        </div>
+      </div>
+      
+      <div id="adminReportsList" class="row gy-3"></div>
+    </section>
+  </main>
+
+  <footer class="bg-primary text-white py-4">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <h5><i class="fas fa-eye me-2"></i>Civic Watch</h5>
+          <p>Empowering communities to report and track civic issues for faster resolution.</p>
+        </div>
+        <div class="col-md-4 mb-3">
+          <h5>Quick Links</h5>
+          <ul class="list-unstyled">
+            <li><a href="#homeSection" class="text-white">Home</a></li>
+            <li><a href="#reportSection" class="text-white">Report Issue</a></li>
+            <li><a href="#viewReportsSection" class="text-white">My Reports</a></li>
+            <li><a href="#statsSection" class="text-white">Statistics</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4 mb-3">
+          <h5>Contact</h5>
+          <ul class="list-unstyled">
+            <li><i class="fas fa-envelope me-2"></i> support@civicwatch.org</li>
+            <li><i class="fas fa-phone me-2"></i> +1 (234) 567-8900</li>
+            <li><i class="fas fa-map-marker-alt me-2"></i> 123 Civic Center, City</li>
+          </ul>
+        </div>
+      </div>
+      <hr class="my-2 bg-light" />
+      <div class="d-flex justify-content-between align-items-center">
+        <div>&copy; 2025 Civic Watch. All rights reserved.</div>
+        <div>
+          <a href="#" class="text-white me-2"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="text-white me-2"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="text-white me-2"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="text-white"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Chart.js for statistics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Signup Modal -->
+  <div class="modal fade" id="signupModal" tabindex="-1" aria-labelledby="signupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="signupForm" class="p-3">
+          <div class="modal-header">
+            <h5 class="modal-title" id="signupModalLabel">
+              <i class="fas fa-user-plus me-2"></i>Sign Up
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+              <div class="mb-3">
+                <label for="signupUsername" class="form-label">Username</label>
+                <input type="text" class="form-control" id="signupUsername" required />
+              </div>
+              <div class="mb-3">
+                <label for="signupEmail" class="form-label">Email</label>
+                <input type="email" class="form-control" id="signupEmail" required />
+              </div>
+              <div class="mb-3">
+                <label for="signupPassword" class="form-label">Password</label>
+                <input type="password" class="form-control" id="signupPassword" required />
+                <div class="form-text">Minimum 8 characters with at least one number</div>
+              </div>
+              <div class="mb-3">
+                <label for="signupConfirmPassword" class="form-label">Confirm Password</label>
+                <input type="password" class="form-control" id="signupConfirmPassword" required />
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="agreeTerms" required />
+                <label class="form-check-label" for="agreeTerms">
+                  I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a>
+                </label>
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-user-plus me-1"></i>Sign Up
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="fas fa-times me-1"></i>Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="loginForm" class="p-3">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loginModalLabel">
+              <i class="fas fa-sign-in-alt me-2"></i>Login
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+              <div class="mb-3">
+                <label for="loginUsername" class="form-label">Username or Email</label>
+                <input type="text" class="form-control" id="loginUsername" required />
+              </div>
+              <div class="mb-3">
+                <label for="loginPassword" class="form-label">Password</label>
+                <input type="password" class="form-control" id="loginPassword" required />
+                <div class="form-text">
+                  <a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot password?</a>
+                </div>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="rememberMe" />
+                <label class="form-check-label" for="rememberMe">Remember me</label>
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-sign-in-alt me-1"></i>Login
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="fas fa-times me-1"></i>Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="forgotPasswordForm" class="p-3">
+          <div class="modal-header">
+            <h5 class="modal-title" id="forgotPasswordModalLabel">
+              <i class="fas fa-key me-2"></i>Reset Password
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Enter your email address and we'll send you a link to reset your password.</p>
+            <div class="mb-3">
+              <label for="resetEmail" class="form-label">Email Address</label>
+              <input type="email" class="form-control" id="resetEmail" required />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-paper-plane me-1"></i>Send Reset Link
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="fas fa-times me-1"></i>Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terms Modal -->
+  <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="termsModalLabel">Terms of Service</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h4>1. Terms</h4>
+          <p>By accessing Civic Watch, you agree to comply with these terms of service, all applicable laws, and regulations.</p>
+          
+          <h4>2. Use License</h4>
+          <p>Permission is granted to use Civic Watch for reporting legitimate civic issues. This is the grant of a license, not a transfer of title.</p>
+          
+          <h4>3. User Responsibilities</h4>
+          <p>You agree to provide accurate information when submitting reports and not to misuse the platform.</p>
+          
+          <h4>4. Privacy</h4>
+          <p>Your data will be handled according to our Privacy Policy. We collect necessary information to process reports and improve services.</p>
+          
+          <h4>5. Limitations</h4>
+          <p>Civic Watch is not liable for how quickly or if reported issues are resolved by authorities.</p>
+          
+          <h4>6. Modifications</h4>
+          <p>We may revise these terms at any time without notice. By using this platform you agree to be bound by the current version.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ Modal -->
+  <div class="modal fade" id="faqModal" tabindex="-1" aria-labelledby="faqModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="faqModalLabel">Frequently Asked Questions</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="accordion" id="faqAccordion">
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                  How do I submit a report?
+                </button>
+              </h2>
+              <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                  <p>To submit a report:</p>
+                  <ol>
+                    <li>Click on "Report Issue" in the navigation</li>
+                    <li>Select the issue type from the dropdown</li>
+                    <li>Add a detailed description</li>
+                    <li>Upload photos if available</li>
+                    <li>Mark the exact location on the map</li>
+                    <li>Click "Submit Report"</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                  How long does it take to resolve issues?
+                </button>
+              </h2>
+              <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                  <p>Resolution times vary depending on:</p>
+                  <ul>
+                    <li>The type and severity of the issue</li>
+                    <li>Local government response times</li>
+                    <li>Available resources</li>
+                    <li>Weather conditions (for outdoor issues)</li>
+                  </ul>
+                  <p>Typically, high priority issues are addressed within 3-5 business days, while others may take longer.</p>
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingThree">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                  Can I report anonymously?
+                </button>
+              </h2>
+              <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                  <p>Currently, you need to create an account to submit reports. However:</p>
+                  <ul>
+                    <li>Your personal information is not shared with authorities</li>
+                    <li>Only your username is visible on public reports</li>
+                    <li>We never share your email or contact information</li>
+                  </ul>
+                  <p>This system helps prevent spam and ensures accountability.</p>
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingFour">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                  What types of issues can I report?
+                </button>
+              </h2>
+              <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                  <p>You can report various civic issues including:</p>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <ul>
+                        <li>Potholes and road damage</li>
+                        <li>Broken street lights</li>
+                        <li>Illegal garbage dumping</li>
+                        <li>Water leaks and sewage issues</li>
+                      </ul>
+                    </div>
+                    <div class="col-md-6">
+                      <ul>
+                        <li>Damaged sidewalks</li>
+                        <li>Traffic signal problems</li>
+                        <li>Public park maintenance</li>
+                        <li>Other community concerns</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <p>For emergencies, please contact local authorities directly.</p>
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="headingFive">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                  How can I check the status of my report?
+                </button>
+              </h2>
+              <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                  <p>To check your report status:</p>
+                  <ol>
+                    <li>Log in to your account</li>
+                    <li>Go to "My Reports" in the navigation</li>
+                    <li>Find your report in the list</li>
+                    <li>The current status is shown next to each report</li>
+                  </ol>
+                  <p>You'll also receive email notifications when your report status changes.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reporting Guidelines Modal -->
+  <div class="modal fade" id="guidelinesModal" tabindex="-1" aria-labelledby="guidelinesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="guidelinesModalLabel">
+            <i class="fas fa-info-circle me-2"></i>Reporting Guidelines
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h4 class="text-primary">How to Submit Effective Reports</h4>
+          <p>Follow these guidelines to ensure your reports are processed quickly and accurately:</p>
+          
+          <h5 class="mt-4">1. Be Specific About Location</h5>
+          <ul>
+            <li>Use the map to mark the exact location</li>
+            <li>Include nearby landmarks or addresses in the description</li>
+            <li>For road issues, note the side of the road or lane</li>
+          </ul>
+          
+          <h5 class="mt-4">2. Provide Detailed Descriptions</h5>
+          <ul>
+            <li>Describe the issue clearly and completely</li>
+            <li>Include measurements when possible (e.g., "pothole is 2 feet wide")</li>
+            <li>Note how long the issue has existed if known</li>
+            <li>Mention any safety hazards created by the issue</li>
+          </ul>
+          
+          <h5 class="mt-4">3. Include Quality Photos</h5>
+          <ul>
+            <li>Take clear, well-lit photos</li>
+            <li>Include both close-up and wider shots showing context</li>
+            <li>For road issues, show the surrounding area for reference</li>
+            <li>Avoid blurry or dark images</li>
+          </ul>
+          
+          <h5 class="mt-4">4. Set Appropriate Priority</h5>
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead>
+                <tr class="table-primary">
+                  <th>Priority Level</th>
+                  <th>When to Use</th>
+                  <th>Examples</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="fw-bold text-danger">High</td>
+                  <td>Immediate safety hazard requiring urgent attention</td>
+                  <td>Large sinkholes, exposed wiring, major water leaks</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-warning">Medium</td>
+                  <td>Important issues that should be addressed soon</td>
+                  <td>Potholes, broken street lights, illegal dumping</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-success">Low</td>
+                  <td>Minor issues or general maintenance needs</td>
+                  <td>Graffiti, cracked sidewalks, minor drainage issues</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="alert alert-warning mt-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Emergency situations</strong> (like gas leaks or downed power lines) should be reported directly to emergency services, not through this platform.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Utility functions for localStorage
+    function saveUsers(users) { localStorage.setItem('cwUsers', JSON.stringify(users)); }
+    function loadUsers() { return JSON.parse(localStorage.getItem('cwUsers')) || []; }
+    function saveReports(reports) { localStorage.setItem('cwReports', JSON.stringify(reports)); }
+    function loadReports() { return JSON.parse(localStorage.getItem('cwReports')) || []; }
+    function sanitize(str) { return str.replace(/[<>]/g, ''); }
+
+    // Auth/UI variables
+    const navLinks = document.querySelectorAll('#navLinks a.nav-link');
+    const btnLogout = document.getElementById('btnLogout');
+    const userGreeting = document.getElementById('userGreeting');
+    const adminNavLink = document.querySelector('#navLinks a[data-link="adminSection"]');
+    const btnToggleDark = document.getElementById('btnToggleDark');
+    let currentUser = null;
+    let issueTypeChart, issueStatusChart;
+
+    // Dark mode toggle
+    btnToggleDark.addEventListener('click', () => {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-bs-theme') === 'dark';
+      html.setAttribute('data-bs-theme', isDark ? 'light' : 'dark');
+      btnToggleDark.innerHTML = isDark ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+      localStorage.setItem('cwDarkMode', !isDark);
+    });
+
+    // Initialize dark mode from localStorage
+    if (localStorage.getItem('cwDarkMode')) {
+    const darkMode = localStorage.getItem('cwDarkMode') === 'true';
+    document.documentElement.setAttribute('data-bs-theme', darkMode ? 'dark' : 'light');
+    btnToggleDark.innerHTML = darkMode 
+        ? '<i class="fas fa-sun"></i>' 
+        : '<i class="fas fa-moon"></i>';
+}
+
+
+    function showSection(sectionId) {
+      document.querySelectorAll('main > section').forEach(sec => sec.style.display = 'none');
+      document.getElementById(sectionId).style.display = '';
+      navLinks.forEach(link => link.dataset.link === sectionId ? link.classList.add('active') : link.classList.remove('active'));
+      
+      // Initialize charts when stats section is shown
+      if(sectionId === 'statsSection') {
+        initStats();
+      }
+    }
+
+    function updateAuthUI() {
+      if(currentUser) {
+        document.getElementById('btnSignup').style.display = 'none';
+        document.getElementById('btnLogin').style.display = 'none';
+        btnLogout.style.display = '';
+        userGreeting.textContent = `Hello, ${currentUser.username}${currentUser.isAdmin ? ' (Admin)' : ''}`;
+        adminNavLink.style.display = currentUser.isAdmin ? '' : 'none';
+      } else {
+        document.getElementById('btnSignup').style.display = '';
+        document.getElementById('btnLogin').style.display = '';
+        btnLogout.style.display = 'none';
+        userGreeting.textContent = '';
+        adminNavLink.style.display = 'none';
+      }
+    }
+
+    // Initialize auth on load
+    function initAuth() {
+      const savedUser = localStorage.getItem('cwCurrentUser');
+      if(savedUser) {
+        try { currentUser = JSON.parse(savedUser); } catch { currentUser = null; }
+      }
+      updateAuthUI();
+      showSection('homeSection');
+    }
+    initAuth();
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        showSection(link.dataset.link);
+        if(link.dataset.link === 'viewReportsSection') showMyReports();
+        if(link.dataset.link === 'adminSection') showAdminReports();
+      });
+    });
+
+    // Handle logout
+    btnLogout.addEventListener('click', () => {
+      currentUser = null;
+      localStorage.removeItem('cwCurrentUser');
+      updateAuthUI();
+      alert('Logged out successfully.');
+      showSection('homeSection');
+    });
+
+    // Signup form submission
+    const signupForm = document.getElementById('signupForm');
+    signupForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const username = signupForm.signupUsername.value.trim();
+      const email = signupForm.signupEmail.value.trim();
+      const password = signupForm.signupPassword.value;
+      const confirmPassword = signupForm.signupConfirmPassword.value;
+      
+      if(!username || !email || !password || !confirmPassword) {
+        alert('Please fill all fields.');
+        return;
+      }
+      
+      if(password.length < 8) {
+        alert('Password must be at least 8 characters long.');
+        return;
+      }
+      
+      if(!/\d/.test(password)) {
+        alert('Password must contain at least one number.');
+        return;
+      }
+      
+      if(password !== confirmPassword) {
+        alert('Passwords do not match.');
+        return;
+      }
+      
+      let users = loadUsers();
+      if(users.find(u => u.username === username)) {
+        alert('Username already exists.');
+        return;
+      }
+      
+      if(users.find(u => u.email === email)) {
+        alert('Email already registered.');
+        return;
+      }
+      
+      users.push({ username, email, password, isAdmin: false });
+      saveUsers(users);
+      alert('Sign up successful, you can now log in.');
+      bootstrap.Modal.getInstance(document.getElementById('signupModal')).hide();
+      signupForm.reset();
+    });
+
+    // Login form submission
+    const loginForm = document.getElementById('loginForm');
+    loginForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const usernameOrEmail = loginForm.loginUsername.value.trim();
+      const password = loginForm.loginPassword.value;
+      if(!usernameOrEmail || !password) {
+        alert('Please fill all fields.');
+        return;
+      }
+      const users = loadUsers();
+      const user = users.find(u => (u.username === usernameOrEmail || u.email === usernameOrEmail) && u.password === password);
+      if(!user) {
+        alert('Invalid username/email or password.');
+        return;
+      }
+      currentUser = { username: user.username, isAdmin: user.isAdmin };
+      localStorage.setItem('cwCurrentUser', JSON.stringify(currentUser));
+      
+      if(loginForm.rememberMe.checked) {
+        localStorage.setItem('cwRememberMe', 'true');
+      } else {
+        localStorage.removeItem('cwRememberMe');
+      }
+      
+      updateAuthUI();
+      alert(`Welcome back, ${currentUser.username}!`);
+      bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+      loginForm.reset();
+      showSection('homeSection');
+    });
+
+    // Forgot password form
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    forgotPasswordForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const email = forgotPasswordForm.resetEmail.value.trim();
+      if(!email) {
+        alert('Please enter your email address.');
+        return;
+      }
+      const users = loadUsers();
+      if(!users.find(u => u.email === email)) {
+        alert('No account found with that email address.');
+        return;
+      }
+      alert(`Password reset link sent to ${email} (simulated for demo)`);
+      bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal')).hide();
+      forgotPasswordForm.reset();
+    });
+
+    // Ensure admin user exists
+    (() => {
+      let users = loadUsers();
+      if(!users.find(u => u.isAdmin)) {
+        users.push({ 
+          username: 'admin', 
+          email: 'admin@civicwatch.org',
+          password: 'admin123', 
+          isAdmin: true 
+        });
+        saveUsers(users);
+      }
+    })();
+
+    // Report Form logic and map
+    const reportForm = document.getElementById('reportForm');
+    const imageUpload = document.getElementById('imageUpload');
+    const imagePreview = document.getElementById('imagePreview');
+    let reportMarker, reportMap, reportImageDataUrl = null;
+
+    function initReportMap() {
+    // Initialize the map
+    reportMap = L.map('reportMap').setView([28.6139, 77.209], 12);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(reportMap);
+    
+    // Add marker
+    reportMarker = L.marker(reportMap.getCenter(), {
+        draggable: true
+    }).addTo(reportMap);
+    
+    // Add search control (using Leaflet-Geosearch)
+    const searchControl = new GeoSearch.GeoSearchControl({
+        provider: new GeoSearch.OpenStreetMapProvider(),
+        style: 'bar',
+        showMarker: false,
+        autoClose: true
+    });
+    reportMap.addControl(searchControl);
+    
+    // Handle marker drag or map click
+    reportMap.on('click', function(e) {
+        reportMarker.setLatLng(e.latlng);
+        updateLocationDescription(e.latlng);
+    });
+    
+    reportMarker.on('dragend', function() {
+        updateLocationDescription(reportMarker.getLatLng());
+    });
+    
+    function updateLocationDescription(latlng) {
+        // Simple reverse geocoding (you might want to use a proper service for better results)
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+            .then(response => response.json())
+            .then(data => {
+                if(data.display_name) {
+                    document.getElementById('locationDescription').value = data.display_name;
+                }
+            })
+            .catch(() => {
+                document.getElementById('locationDescription').value = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
+            });
+    }
+}
+    initReportMap();
+
+    // Show reporting guidelines
+    document.getElementById('btnShowGuidelines').addEventListener('click', () => {
+      new bootstrap.Modal(document.getElementById('guidelinesModal')).show();
+    });
+
+    imageUpload.addEventListener('change', () => {
+      const file = imageUpload.files[0];
+      if(!file) {
+        imagePreview.src = '';
+        imagePreview.classList.add('d-none');
+        reportImageDataUrl = null;
+        return;
+      }
+      
+      // Validate image size (max 5MB)
+      if(file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB.');
+        imageUpload.value = '';
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = e => {
+        imagePreview.src = e.target.result;
+        imagePreview.classList.remove('d-none');
+        reportImageDataUrl = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    reportForm.addEventListener('submit', e => {
+      e.preventDefault();
+      if(!currentUser) {
+        alert('Please login to submit a report.');
+        showSection('homeSection');
+        return;
+      }
+      
+      const issueType = document.getElementById('issueType').value;
+      const description = sanitize(document.getElementById('description').value.trim());
+      const priority = document.getElementById('priority').value;
+      const locationDesc = sanitize(document.getElementById('locationDescription').value.trim());
+      const latLng = reportMarker.getLatLng();
+      
+      if(!issueType || !description || !latLng) {
+        alert('Please fill all required fields and mark location on the map.');
+        return;
+      }
+      
+      const newReport = {
+        id: Date.now(),
+        username: currentUser.username,
+        issueType,
+        description,
+        priority,
+        locationDesc,
+        imageDataUrl: reportImageDataUrl,
+        lat: latLng.lat,
+        lng: latLng.lng,
+        status: 'Pending',
+        createdAt: new Date().toISOString(),
+        updates: []
+      };
+      
+      let reports = loadReports();
+      reports.push(newReport);
+      saveReports(reports);
+      
+      alert('Report submitted successfully!');
+      reportForm.reset();
+      imagePreview.src = '';
+      imagePreview.classList.add('d-none');
+      reportImageDataUrl = null;
+      reportMarker.setPosition(reportMap.getCenter());
+      document.getElementById('locationDescription').value = '';
+      
+      showMyReports();
+      showSection('viewReportsSection');
+    });
+
+    document.getElementById('btnCancelReport').addEventListener('click', () => {
+      reportForm.reset();
+      imagePreview.src = '';
+      imagePreview.classList.add('d-none');
+      reportImageDataUrl = null;
+      reportMarker.setPosition(reportMap.getCenter());
+      document.getElementById('locationDescription').value = '';
+      showSection('homeSection');
+    });
+
+    const reportsListDiv = document.getElementById('reportsList');
+    const noReportsMessage = document.getElementById('noReportsMessage');
+    
+    function showMyReports() {
+      if(!currentUser) {
+        alert('Please login to view your reports.');
+        showSection('homeSection');
+        return;
+      }
+      
+      const reports = loadReports()
+        .filter(r => r.username === currentUser.username)
+        .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      if(!reports.length) {
+        reportsListDiv.innerHTML = '';
+        noReportsMessage.style.display = '';
+        return;
+      }
+      
+      noReportsMessage.style.display = 'none';
+      let html = '';
+      reports.forEach(report => {
+        html += reportCardHtml(report, currentUser.isAdmin);
+      });
+      reportsListDiv.innerHTML = html;
+
+      // Add event listeners for share buttons
+      document.querySelectorAll('.btn-share-report').forEach(btn => {
+        btn.addEventListener('click', e => {
+          shareReport(btn.dataset.reportId);
+        });
+      });
+      
+      // Add event listeners for view timeline buttons
+      document.querySelectorAll('.btn-view-timeline').forEach(btn => {
+        btn.addEventListener('click', e => {
+          viewReportTimeline(btn.dataset.reportId);
+        });
+      });
+    }
+
+    // Search functionality for my reports
+    document.getElementById('searchMyReports').addEventListener('input', function() {
+      const searchTerm = this.value.toLowerCase();
+      const reports = document.querySelectorAll('#reportsList .card');
+      
+      let hasVisible = false;
+      reports.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if(text.includes(searchTerm)) {
+          card.parentElement.style.display = '';
+          hasVisible = true;
+        } else {
+          card.parentElement.style.display = 'none';
+        }
+      });
+      
+      noReportsMessage.style.display = hasVisible ? 'none' : '';
+    });
+
+    // Filter functionality for my reports
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const filter = this.dataset.filter;
+        const reports = document.querySelectorAll('#reportsList .card');
+        
+        let hasVisible = false;
+        reports.forEach(card => {
+          if(filter === 'all' || card.textContent.includes(filter)) {
+            card.parentElement.style.display = '';
+            hasVisible = true;
+          } else {
+            card.parentElement.style.display = 'none';
+          }
+        });
+        
+        noReportsMessage.style.display = hasVisible ? 'none' : '';
+        
+        // Update active filter button
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    function shareReport(reportId) {
+      const reports = loadReports();
+      const report = reports.find(r => r.id == reportId);
+      if(!report) {
+        alert('Report not found.');
+        return;
+      }
+      
+      const shareData = {
+        title: `Civic Watch: ${report.issueType} Report`,
+        text: `Issue: ${report.issueType}\nStatus: ${report.status}\nDescription: ${report.description}\nLocation: ${report.locationDesc || 'See map'}\nReported by: ${report.username}`,
+        url: window.location.href.split('#')[0] + `?report=${reportId}`
+      };
+      
+      if(navigator.share) {
+        navigator.share(shareData).catch(() => alert('Sharing cancelled or failed.'));
+      } else {
+        navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`).then(() => alert('Report details copied to clipboard!'));
+      }
+    }
+    
+    function viewReportTimeline(reportId) {
+      const reports = loadReports();
+      const report = reports.find(r => r.id == reportId);
+      if(!report) {
+        alert('Report not found.');
+        return;
+      }
+      
+      // Create timeline HTML
+      let timelineHtml = `
+        <h5>Report Timeline</h5>
+        <div class="timeline">
+          <div class="timeline-item">
+            <strong>Report Submitted</strong>
+            <p>${report.description}</p>
+            <div class="timeline-date">${new Date(report.createdAt).toLocaleString()}</div>
+          </div>`;
+      
+      if(report.updates && report.updates.length > 0) {
+        report.updates.forEach(update => {
+          timelineHtml += `
+            <div class="timeline-item">
+              <strong>Status Update: ${update.status}</strong>
+              ${update.notes ? `<p>${sanitize(update.notes)}</p>` : ''}
+              <div class="timeline-date">${new Date(update.timestamp).toLocaleString()}</div>
+            </div>`;
+        });
+      } else {
+        timelineHtml += `
+          <div class="timeline-item">
+            <p class="text-muted">No updates yet</p>
+          </div>`;
+      }
+      
+      timelineHtml += `</div>`;
+      
+      // Show in modal
+      const modal = new bootstrap.Modal(document.createElement('div'));
+      modal._element.className = 'modal fade';
+      modal._element.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Report Timeline: ${sanitize(report.issueType)}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              ${timelineHtml}
+              ${report.imageDataUrl ? `<img src="${report.imageDataUrl}" class="img-fluid rounded mt-3" alt="Report image">` : ''}
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>`;
+      
+      document.body.appendChild(modal._element);
+      modal.show();
+      
+      // Remove modal from DOM after it's hidden
+      modal._element.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal._element);
+      });
+    }
+
+    function getStatusBadge(status) {
+      const statusClass = {
+        'Pending': 'status-pending',
+        'In Progress': 'status-inprogress',
+        'Resolved': 'status-resolved',
+        'Rejected': 'status-rejected'
+      }[status] || 'bg-secondary';
+      
+      return `<span class="badge ${statusClass} status-badge">${status}</span>`;
+    }
+    
+    function getPriorityClass(priority) {
+      return {
+        'High': 'priority-high',
+        'Medium': 'priority-medium',
+        'Low': 'priority-low'
+      }[priority] || '';
+    }
+
+    function reportCardHtml(report, showStatusUpdate) {
+      const priorityClass = getPriorityClass(report.priority);
+      const statusBadge = getStatusBadge(report.status);
+      
+      return `
+      <div class="col-md-6">
+        <div class="card shadow-sm h-100 ${priorityClass}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <h5 class="card-title">${sanitize(report.issueType)}</h5>
+              ${statusBadge}
+            </div>
+            <h6 class="card-subtitle mb-2 text-muted">Priority: ${report.priority}</h6>
+            <p class="card-text">${sanitize(report.description)}</p>
+            
+            ${report.locationDesc ? `<p class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>${sanitize(report.locationDesc)}</p>` : ''}
+            
+            ${report.imageDataUrl ? `<img src="${report.imageDataUrl}" alt="Issue image" class="img-fluid rounded mb-2" style="max-height: 150px; width: auto;" />` : ''}
+            
+            <p class="text-muted"><small><i class="far fa-clock me-1"></i>Reported on: ${new Date(report.createdAt).toLocaleString()}</small></p>
+            
+            <div class="d-flex flex-wrap gap-2">
+            <a href="https://www.openstreetmap.org/?mlat=${report.lat}&mlon=${report.lng}#map=18/${report.lat}/${report.lng}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+    <i class="fas fa-map-marked-alt me-1"></i>View Map
+</a>
+              <button class="btn btn-sm btn-outline-secondary btn-share-report" data-report-id="${report.id}" type="button">
+                <i class="fas fa-share-alt me-1"></i>Share
+              </button>
+              <button class="btn btn-sm btn-outline-info btn-view-timeline" data-report-id="${report.id}" type="button">
+                <i class="fas fa-history me-1"></i>Timeline
+              </button>
+            </div>
+            
+            ${
+              showStatusUpdate ? `
+              <hr/>
+              <div class="mt-2">
+                <label class="form-label">Update Status</label>
+                <div class="input-group mb-2">
+                  <select class="form-select form-select-sm" data-report-id="${report.id}">
+                    <option value="Pending" ${report.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                    <option value="In Progress" ${report.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                    <option value="Resolved" ${report.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                    <option value="Rejected" ${report.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                  </select>
+                </div>
+                <textarea class="form-control form-control-sm mb-2" data-report-id="${report.id}" placeholder="Optional update notes"></textarea>
+                <button class="btn btn-sm btn-success btn-update-status w-100" data-report-id="${report.id}" type="button">
+                  <i class="fas fa-save me-1"></i>Update Status
+                </button>
+              </div>` : ''
+            }
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const adminReportsListDiv = document.getElementById('adminReportsList');
+    
+    function showAdminReports() {
+      if(!currentUser || !currentUser.isAdmin) {
+        alert('Admin access required.');
+        showSection('homeSection');
+        return;
+      }
+      
+      const reports = loadReports().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      if(!reports.length) {
+        adminReportsListDiv.innerHTML = `<p class="text-muted">No reports found.</p>`;
+        return;
+      }
+      
+      let html = '';
+      reports.forEach(report => html += reportCardHtml(report, true));
+      adminReportsListDiv.innerHTML = html;
+
+      // Add event listeners for update status buttons
+      document.querySelectorAll('.btn-update-status').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const reportId = parseInt(btn.dataset.reportId);
+          const select = document.querySelector(`select[data-report-id="${reportId}"]`);
+          const notes = document.querySelector(`textarea[data-report-id="${reportId}"]`);
+          
+          if(!select) return;
+          updateReportStatus(reportId, select.value, notes ? notes.value.trim() : '');
+        });
+      });
+
+      // Add event listeners for share buttons
+      document.querySelectorAll('.btn-share-report').forEach(btn => {
+        btn.addEventListener('click', () => shareReport(btn.dataset.reportId));
+      });
+      
+      // Add event listeners for timeline buttons
+      document.querySelectorAll('.btn-view-timeline').forEach(btn => {
+        btn.addEventListener('click', () => viewReportTimeline(btn.dataset.reportId));
+      });
+    }
+    
+    // Search functionality for admin reports
+    document.getElementById('searchAdminReports').addEventListener('input', function() {
+      const searchTerm = this.value.toLowerCase();
+      const reports = document.querySelectorAll('#adminReportsList .card');
+      
+      reports.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.parentElement.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
+    });
+
+    // Filter functionality for admin reports
+    document.querySelectorAll('.admin-filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const filter = this.dataset.filter;
+        const reports = document.querySelectorAll('#adminReportsList .card');
+        
+        reports.forEach(card => {
+          card.parentElement.style.display = (filter === 'all' || card.textContent.includes(filter)) ? '' : 'none';
+        });
+        
+        // Update active filter button
+        document.querySelectorAll('.admin-filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    function updateReportStatus(reportId, newStatus, notes = '') {
+      let reports = loadReports();
+      const idx = reports.findIndex(r => r.id === reportId);
+      
+      if(idx === -1) {
+        alert('Report not found.');
+        return;
+      }
+      
+      // Create update entry
+      const update = {
+        status: newStatus,
+        notes: sanitize(notes),
+        timestamp: new Date().toISOString(),
+        updatedBy: currentUser.username
+      };
+      
+      // Initialize updates array if it doesn't exist
+      if(!reports[idx].updates) {
+        reports[idx].updates = [];
+      }
+      
+      reports[idx].status = newStatus;
+      reports[idx].updates.push(update);
+      saveReports(reports);
+      
+      alert('Status updated successfully.');
+      
+      // Refresh the appropriate view
+      if(document.getElementById('adminSection').style.display !== 'none') {
+        showAdminReports();
+      } else {
+        showMyReports();
+      }
+    }
+
+    // Initialize statistics charts
+    function initStats() {
+      const reports = loadReports();
+      const ctxType = document.getElementById('issueTypeChart').getContext('2d');
+      const ctxStatus = document.getElementById('issueStatusChart').getContext('2d');
+      
+      // Update stats numbers
+      document.getElementById('totalReportsStat').textContent = reports.length;
+      document.getElementById('resolvedReportsStat').textContent = reports.filter(r => r.status === 'Resolved').length;
+      document.getElementById('activeReportsStat').textContent = reports.filter(r => r.status !== 'Resolved').length;
+      
+      // Prepare data for charts
+      const typeCounts = {};
+      const statusCounts = {};
+      
+      reports.forEach(report => {
+        typeCounts[report.issueType] = (typeCounts[report.issueType] || 0) + 1;
+        statusCounts[report.status] = (statusCounts[report.status] || 0) + 1;
+      });
+      
+      const typeLabels = Object.keys(typeCounts);
+      const typeData = Object.values(typeCounts);
+      
+      const statusLabels = Object.keys(statusCounts);
+      const statusData = Object.values(statusCounts);
+      
+      // Colors for charts
+      const backgroundColors = [
+        'rgba(54, 162, 235, 0.7)',
+        'rgba(255, 99, 132, 0.7)',
+        'rgba(75, 192, 192, 0.7)',
+        'rgba(255, 159, 64, 0.7)',
+        'rgba(153, 102, 255, 0.7)',
+        'rgba(255, 205, 86, 0.7)',
+        'rgba(201, 203, 207, 0.7)'
+      ];
+      
+      // Destroy existing charts if they exist
+      if(issueTypeChart) issueTypeChart.destroy();
+      if(issueStatusChart) issueStatusChart.destroy();
+      
+      // Create issue type chart
+      issueTypeChart = new Chart(ctxType, {
+        type: 'bar',
+        data: {
+          labels: typeLabels,
+          datasets: [{
+            label: 'Reports by Type',
+            data: typeData,
+            backgroundColor: backgroundColors.slice(0, typeLabels.length),
+            borderColor: backgroundColors.map(c => c.replace('0.7', '1')),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          }
+        }
+      });
+      
+      // Create issue status chart
+      issueStatusChart = new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+          labels: statusLabels,
+          datasets: [{
+            label: 'Reports by Status',
+            data: statusData,
+            backgroundColor: [
+              'rgba(108, 117, 125, 0.7)', // Pending - gray
+              'rgba(13, 202, 240, 0.7)',  // In Progress - cyan
+              'rgba(25, 135, 84, 0.7)',   // Resolved - green
+              'rgba(220, 53, 69, 0.7)'    // Rejected - red
+            ],
+            borderColor: [
+              'rgba(108, 117, 125, 1)',
+              'rgba(13, 202, 240, 1)',
+              'rgba(25, 135, 84, 1)',
+              'rgba(220, 53, 69, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+      
+      // Populate recent reports table
+      const recentReportsTable = document.getElementById('recentReportsTable');
+      recentReportsTable.innerHTML = '';
+      
+      const recentReports = reports.slice(0, 5); // Get 5 most recent
+      
+      recentReports.forEach(report => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${sanitize(report.issueType)}</td>
+          <td>${getStatusBadge(report.status)}</td>
+          <td>${report.locationDesc ? sanitize(report.locationDesc.substring(0, 30) + (report.locationDesc.length > 30 ? '...' : '')) : 'View Map'}</td>
+          <td>${new Date(report.createdAt).toLocaleDateString()}</td>
+        `;
+        recentReportsTable.appendChild(row);
+      });
+    }
+
+    // Homepage buttons
+    document.getElementById('btnGoReport').addEventListener('click', () => {
+      if(!currentUser) {
+        alert('Please login first to submit report.');
+        new bootstrap.Modal(document.getElementById('loginModal')).show();
+        return;
+      }
+      showSection('reportSection');
+    });
+    
+    document.getElementById('btnGoMyReports').addEventListener('click', () => {
+      if(!currentUser) {
+        alert('Please login first to view your reports.');
+        new bootstrap.Modal(document.getElementById('loginModal')).show();
+        return;
+      }
+      showMyReports();
+      showSection('viewReportsSection');
+    });
+    
+    document.getElementById('btnGoStats').addEventListener('click', () => {
+      showSection('statsSection');
+    });
+    
+    document.getElementById('btnGoReportFromEmpty').addEventListener('click', () => {
+      showSection('reportSection');
+    });
+
+    // Check for report ID in URL
+    function checkUrlForReport() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const reportId = urlParams.get('report');
+      
+      if(reportId) {
+        const reports = loadReports();
+        const report = reports.find(r => r.id == reportId);
+        
+        if(report) {
+          // Show report in modal
+          const modal = new bootstrap.Modal(document.createElement('div'));
+          modal._element.className = 'modal fade';
+          modal._element.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Report: ${sanitize(report.issueType)}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <p><strong>Status:</strong> ${getStatusBadge(report.status)}</p>
+                  <p><strong>Reported by:</strong> ${sanitize(report.username)}</p>
+                  <p><strong>Description:</strong> ${sanitize(report.description)}</p>
+                  
+                  ${report.locationDesc ? `<p><strong>Location:</strong> ${sanitize(report.locationDesc)}</p>` : ''}
+                  
+                  ${report.imageDataUrl ? `<img src="${report.imageDataUrl}" class="img-fluid rounded mb-3" alt="Report image">` : ''}
+                  
+                  <a href="https://www.google.com/maps?q=${report.lat},${report.lng}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-map-marked-alt me-1"></i>View on Map
+                  </a>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+              </div>
+            </div>`;
+          
+          document.body.appendChild(modal._element);
+          modal.show();
+          
+          // Remove modal from DOM after it's hidden
+          modal._element.addEventListener('hidden.bs.modal', () => {
+            document.body.removeChild(modal._element);
+            
+            // Clean URL without reloading
+            const cleanUrl = window.location.href.split('?')[0];
+            window.history.replaceState({}, document.title, cleanUrl);
+          });
+        }
+      }
+    }
+    
+    // Check for report in URL when page loads
+    window.addEventListener('load', checkUrlForReport);
+  </script>
+</body>
+</html>
